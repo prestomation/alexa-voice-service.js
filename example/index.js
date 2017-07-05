@@ -3,10 +3,10 @@ const player = AVS.Player;
 
 const avs = new AVS({
   debug: true,
-  clientId: 'amzn1.application-oa2-client.696ab90fc5844fdbb8efc17394a79c00',
+  clientId: 'amzn1.application-oa2-client.ad0bee2946b141fbbeeaf75fef71849b',
   deviceId: 'test_device',
   deviceSerialNumber: 123,
-  redirectUri: `https://${window.location.host}/authresponse`
+  redirectUri: `http://${window.location.host}`
 });
 window.avs = avs;
 
@@ -57,6 +57,7 @@ avs.player.on(AVS.Player.EventTypes.ENDED, () => {
   replayAudio.disabled = false;
   pauseAudio.disabled = true;
   stopAudio.disabled = true;
+  initWakeword();
 });
 
 avs.player.on(AVS.Player.EventTypes.STOP, () => {
@@ -146,10 +147,31 @@ avs.getTokenFromUrl()
 
 loginBtn.addEventListener('click', login);
 
+function initWakeword() {
+    avs.detectWakeWord(["sumerian"]).then(() => avs.startRecording());
+}
+
 function login(event) {
-  return avs.login()
+  amazon.Login.setClientId('amzn1.application-oa2-client.ad0bee2946b141fbbeeaf75fef71849b');
+
+  var options = { 
+    scope : 'alexa:all',
+    scope_data : {
+        "alexa:all": {
+          productID: "AVSTest",
+          productInstanceAttributes: {
+            deviceSerialNumber: "123"
+          }
+        }
+      }
+   };
+  amazon.Login.authorize(options, function(data){
+    avs.setToken(data.access_token).then(() => avs.requestMic()).then(() => initWakeword()) ;
+    
+  });
+  /*return avs.login()
   .then(() => avs.requestMic())
-  .catch(() => {});
+  .catch(() => {});*/
 
   /*
   // If using client secret
@@ -178,8 +200,8 @@ stopRecording.addEventListener('click', () => {
     avs.player.emptyQueue()
     .then(() => avs.audioToBlob(dataView))
     .then(blob => logAudioBlob(blob, 'VOICE'))
-    .then(() => avs.player.enqueue(dataView))
-    .then(() => avs.player.play())
+    //.then(() => avs.player.enqueue(dataView))
+    //.then(() => avs.player.play())
     .catch(error => {
       console.error(error);
     });
