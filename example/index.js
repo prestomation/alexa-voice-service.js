@@ -10,30 +10,6 @@ const avs = new AVS({
 });
 window.avs = avs;
 
-avs.on(AVS.EventTypes.TOKEN_SET, () => {
-  loginBtn.disabled = true;
-  logoutBtn.disabled = false;
-  startRecording.disabled = false;
-  stopRecording.disabled = true;
-});
-
-avs.on(AVS.EventTypes.RECORD_START, () => {
-  startRecording.disabled = true;
-  stopRecording.disabled = false;
-});
-
-avs.on(AVS.EventTypes.RECORD_STOP, () => {
-  startRecording.disabled = false;
-  stopRecording.disabled = true;
-});
-
-avs.on(AVS.EventTypes.LOGOUT, () => {
-  loginBtn.disabled = false;
-  logoutBtn.disabled = true;
-  startRecording.disabled = true;
-  stopRecording.disabled = true;
-});
-
 avs.on(AVS.EventTypes.TOKEN_INVALID, () => {
   avs.logout()
   .then(login)
@@ -44,42 +20,6 @@ avs.on(AVS.EventTypes.ERROR, logError);
 
 avs.player.on(AVS.Player.EventTypes.LOG, log);
 avs.player.on(AVS.Player.EventTypes.ERROR, logError);
-
-avs.player.on(AVS.Player.EventTypes.PLAY, () => {
-  playAudio.disabled = true;
-  replayAudio.disabled = true;
-  pauseAudio.disabled = false;
-  stopAudio.disabled = false;
-});
-
-avs.player.on(AVS.Player.EventTypes.ENDED, () => {
-  playAudio.disabled = true;
-  replayAudio.disabled = false;
-  pauseAudio.disabled = true;
-  stopAudio.disabled = true;
-  initWakeword();
-});
-
-avs.player.on(AVS.Player.EventTypes.STOP, () => {
-  playAudio.disabled = true;
-  replayAudio.disabled = false;
-  pauseAudio.disabled = false;
-  stopAudio.disabled = false;
-});
-
-avs.player.on(AVS.Player.EventTypes.PAUSE, () => {
-  playAudio.disabled = false;
-  replayAudio.disabled = false;
-  pauseAudio.disabled = true;
-  stopAudio.disabled = true;
-});
-
-avs.player.on(AVS.Player.EventTypes.REPLAY, () => {
-  playAudio.disabled = true;
-  replayAudio.disabled = true;
-  pauseAudio.disabled = false;
-  stopAudio.disabled = false;
-});
 
 function log(message) {
   logOutput.innerHTML = `<li>LOG: ${message}</li>` + logOutput.innerHTML;
@@ -145,10 +85,9 @@ avs.getTokenFromUrl()
   }
 });
 
-loginBtn.addEventListener('click', login);
 
 function initWakeword() {
-    avs.detectWakeWord(["sumerian"]).then(() => avs.startRecording());
+    avs.detectWakeWord(["alexa"]).then(() => stopRecordingF());
 }
 
 function login(event) {
@@ -181,7 +120,6 @@ function login(event) {
   */
 }
 
-logoutBtn.addEventListener('click', logout);
 
 function logout() {
   return avs.logout()
@@ -191,11 +129,9 @@ function logout() {
   });
 }
 
-startRecording.addEventListener('click', () => {
-  avs.startRecording();
-});
 
-stopRecording.addEventListener('click', () => {
+function stopRecordingF() {
+  console.log("stopRecordingF");
   avs.stopRecording().then(dataView => {
     avs.player.emptyQueue()
     .then(() => avs.audioToBlob(dataView))
@@ -302,7 +238,7 @@ stopRecording.addEventListener('click', () => {
         if (promises.length) {
           Promise.all(promises)
          .then(() => {
-            avs.player.playQueue()
+            avs.player.playQueue().then(() => initWakeword());
           });
         }
       }
@@ -312,23 +248,9 @@ stopRecording.addEventListener('click', () => {
       console.error(error);
     });
   });
-});
+}
 
-stopAudio.addEventListener('click', (event) => {
-  avs.player.stop();
-});
-
-pauseAudio.addEventListener('click', (event) => {
-  avs.player.pause();
-});
-
-playAudio.addEventListener('click', (event) => {
-  avs.player.play();
-});
-
-replayAudio.addEventListener('click', (event) => {
-  avs.player.replay();
-});
+login();
 
 function sendBlob(blob) {
   const xhr = new XMLHttpRequest();
