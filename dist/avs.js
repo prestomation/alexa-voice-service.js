@@ -476,10 +476,12 @@ class AVS {
 
   connectMediaStream(stream) {
     return new Promise((resolve, reject) => {
-      const isMediaStream = Object.prototype.toString.call(stream) === '[object MediaStream]';
+      const isMediaStream = Object.prototype.toString.call(stream).indexOf("MediaStream") >= 0;
 
       if (!isMediaStream) {
         const error = new TypeError('Argument must be a `MediaStream` object.')
+        this._log('error', stream);
+        this._log('error', Object.prototype.toString.call(stream));
         this._log('error', error)
         this.emit(AVS.EventTypes.ERROR, error);
         return reject(error);
@@ -537,7 +539,8 @@ class AVS {
  
       console.log("wakeword recognition starting..");
       recognition.start();
-      recognition.onresult = function() {
+      recognition.onresult = () => {
+        this.emit(AVS.EventTypes.WAKE_WORD_DETECTED);
         console.log("wakeword detected!");
         wakewordDetected = true;
         recognition.abort();
@@ -545,21 +548,24 @@ class AVS {
         var sentenceRecognizer = new webkitSpeechRecognition();
         console.log("Start our new recognizer to identify speech end");
         sentenceRecognizer.start()
-        sentenceRecognizer.onend = resolve;
+        sentenceRecognizer.onend = () => {
+          this.emit(AVS.EventTypes.WAKE_WORD_ENDED);
+          resolve();
+         };
       };
 
-      recognition.onspeechend = function() {
+      recognition.onspeechend = () => {
         console.log("onspeechend");
       }
-      recognition.onsoundend = function() {
+      recognition.onsoundend = ()=> {
         console.log("onsoundend");
       }
 
-      recognition.onsoundend = function() {
+      recognition.onsoundend = () => {
         console.log("onsoundend");
       }
 
-      recognition.onend = function() {
+      recognition.onend = () => {
         console.log("onend");
         if(!wakewordDetected)
         {
@@ -567,7 +573,7 @@ class AVS {
         }
       }
 
-      recognition.onerror = function(event) {
+      recognition.onerror = (event)  =>{
         console.log("wake word detection error", event);
       };
       console.log('Listening for wakeword');
@@ -764,7 +770,9 @@ class AVS {
       RECORD_STOP: 'recordStop',
       TOKEN_SET: 'tokenSet',
       REFRESH_TOKEN_SET: 'refreshTokenSet',
-      TOKEN_INVALID: 'tokenInvalid'
+      TOKEN_INVALID: 'tokenInvalid',
+      WAKE_WORD_DETECTED: 'wakeWordDetected',
+      WAKE_WORD_ENDED: 'wakeWordEnded'
     };
   }
 
